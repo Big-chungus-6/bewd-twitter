@@ -1,40 +1,51 @@
 class TweetsController < ApplicationController
-  def create
-    @tweet = current_user.tweets.new(tweet_params)
+  def index
+    @tweets = Tweet.all.order(created_at: :desc)
+    render 'tweets/index'
+  end
 
-    if @tweet.save
-      render json: { tweet: new_tweet}
-    else
-      render json: @tweet.errors, status: :unprocessable_entity
-    end
+  def create
+    token = cookies.signed[:twitter_session_token]
+    session = Session.find_by(token: token)
+    user = session.user
+
+    @tweet = user.tweets.new(tweet_params)
+
+    render 'tweets/create' if @tweet.save
   end
 
   def destroy
-    @tweet = current_user.tweets.find(params[:id])
-    @tweet.destroy
-    head :no_content
-  end
+    token = cookies.signed[:twitter_session_token]
+    session = Session.find_by(token: token)
 
-  def index
-    @tweets = Tweet.all
-    render json: @tweets
+    return render json: { success: false } unless session
+
+    user = session.user
+    tweet = Tweet.find_by(id: params[:id])
+
+    if tweet && (tweet.user == user) && tweet.destroy
+      render json: {
+        success: true
+      }
+    else
+      render json: {
+        success: false
+      }
+    end
   end
 
   def index_by_user
-    @user = User.find_by(username: params[:username])
-    @tweets = @user.tweets
-    render json: @tweets
+    user = User.find_by(username: params[:username])
+
+    if user
+      @tweets = user.tweets
+      render 'tweets/index'
+    end
   end
 
   private
 
   def tweet_params
     params.require(:tweet).permit(:message)
-  end
-
-  def current_user
-    token = cookies[:twitter_session_token]
-    session = Session.find_by(token: token)
-    User.find(session.user_id)
   end
 end

@@ -8,10 +8,10 @@ Rails.application.routes.draw do
   # SESSIONS
   resources :sessions, only: [:create] do
     collection do
-      get :authenticated
       delete :destroy
     end
   end
+  get '/authenticated' => 'sessions#authenticated'
 
   # TWEETS
   resources :tweets, only: [:create, :destroy, :index]

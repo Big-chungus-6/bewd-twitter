@@ -3,7 +3,7 @@ class TweetsController < ApplicationController
     @tweet = current_user.tweets.new(tweet_params)
 
     if @tweet.save
-      render json: @tweet, status: :created
+      render json: { tweet: new_tweet}
     else
       render json: @tweet.errors, status: :unprocessable_entity
     end
